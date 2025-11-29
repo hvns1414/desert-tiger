@@ -7,6 +7,7 @@ from colorama import Fore
 from logs import log_error,log_blacklist,log_event
 import requests
 import json
+from firewall import *
 #--------------------------------
 
 THRESHOLD=40
@@ -22,7 +23,7 @@ log_blacklist("127.0.0.1")
 print(f"[{info}]THRESHOLD:{THRESHOLD}")
 def packet_caliback(packet):
     src_ip=packet[IP].src
-    packet_count=[src_ip] =+1
+    packet_count=[src_ip] =+1 # bura düzeltilecek
     current_time=time.time()
     time_intreval=int(current_time) - int(start_time[0])
     if time_intreval>=1:
@@ -72,6 +73,16 @@ def packet_caliback(packet):
                 except Exception as e:
                     print(f"[!] Exception occurred: {e}")
                     log_error(f"[!] Exception occurred: {e}")
+            if is_nimda_worm(packet):
+                print(f"{warming}BANNED Nimda source IP:{src_ip}")
+                os.system(f"iptables -A INPUT -s {ip} -j DROP")
+                log_event(f"{src_ip}:Nimda")
+                log_blacklist({src_ip})
+            if src_ip in blacklist:
+                os.system(f"iptables -A INPUT -s {ip} -j DROP")
+                log_event(f"{src_ip}:Banned")
+                log_blacklist({src_ip})
+#başa alınacak
             packet_count.clear()
             start_time[0]=current_time
     if __name__=="__name__":
